@@ -1,0 +1,57 @@
+stack: matti/lb-ingress
+version: 0.1.0
+description: Loadbalancer ingress for http/https
+expose: lb
+
+variables:
+  lb_affinity:
+    type: string
+    default: label==lb-ingress
+    from:
+      prompt: Affinity
+  lb_certs:
+    type: array
+    required: false
+    from:
+      vault_cert_prompt: Pick SSL cert(s) from Vault
+  lb_stats_password:
+    type: string
+    from:
+      vault: LB_STATS_PASSWORD
+      random_string: 12
+    to:
+      vault: LB_STATS_PASSWORD
+
+services:
+  lb:
+    image: kontena/lb:latest
+    ports:
+      - 80:80
+      # {% if lb_certs %}
+      - 443:443
+      # {% endif %}
+    # {% if lb_affinity %}
+    affinity:
+      - {{ lb_affinity }}
+    # {% endif %}
+    deploy:
+      strategy: daemon
+      wait_for_port: 80
+      interval: 1d # re-deploy once in a day for security updates and freshness
+    health_check:
+      protocol: http
+      port: 80
+      uri: /__health
+    environment:
+      - KONTENA_LB_HEALTH_URI=/__health
+    secrets:
+      - secret: LB_STATS_PASSWORD
+        name: STATS_PASSWORD
+        type: env
+      # {% if lb_certs %}
+      # {% for cert in lb_certs %}
+      - secret: {{ cert }}
+        name: SSL_CERTS
+        type: env
+      # {% endfor %}
+      # {% endif %}

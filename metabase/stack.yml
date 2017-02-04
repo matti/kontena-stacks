@@ -1,0 +1,64 @@
+stack: matti/metabase
+version: 0.0.1
+description: http://www.metabase.com
+expose: server
+
+variables:
+  metabase_tag:
+    type: string
+    default: v0.22.2
+    from:
+      prompt: metabase/metabase:TAG
+  link_lb:
+    type: boolean
+    from:
+      prompt: Link loadbalancer
+  linked_lb:
+    # BUG only_if: link_lb
+    type: string
+    default: lb-ingress/lb
+    from:
+      prompt: Linked loadbalancer
+  KONTENA_LB_VIRTUAL_HOSTS:
+    # BUG only_if: link_lb
+    type: string
+    # BUG required: false
+    default: example.net
+    from:
+      prompt: KONTENA_LB_VIRTUAL_HOSTS
+  lb_force_https:
+    # BUG only_if: link_lb
+    type: boolean
+    from:
+      prompt: Force HTTPS redirect?
+  port:
+    # BUG skip_if: link_lb
+    type: integer
+    default: 3000
+    from:
+      prompt: Map port on host (only if not linked to LB)
+
+services:
+  server:
+    image: metabase/metabase:{{metabase_tag}}
+    stateful: true
+    environment:
+      - MB_DB_FILE=/data/metabase.db
+      # BUG just 'if link_lb' does not work (!)
+      # {% if link_lb == 'true' %}
+      - KONTENA_LB_INTERNAL_PORT=3000
+      - KONTENA_LB_VIRTUAL_HOSTS=${KONTENA_LB_VIRTUAL_HOSTS}
+      # {% if lb_force_https == 'true' %}
+      - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
+      # {% endif %}
+      # {% endif %}
+    volumes:
+      - /data
+    # {% if link_lb == 'true' %}
+    links:
+      - {{ linked_lb }}
+    # {% else %}
+    ports:
+      # BUG {{port}} does not work here, but this does:
+      - ${port}:3000
+    # {% endif %}
