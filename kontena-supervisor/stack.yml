@@ -1,5 +1,5 @@
 stack: matti/kontena-supervisor
-version: 0.0.1
+version: 0.0.2
 description: kontena-supervisor
 
 expose: web
@@ -26,7 +26,7 @@ services:
     health_check:
       protocol: http
       port: 80
-      interval: 15
+      interval: 60
       uri: /__health
       initial_delay: 60
       timeout: 2
