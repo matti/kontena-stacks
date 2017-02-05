@@ -1,0 +1,60 @@
+stack: matti/registry
+version: 0.0.1
+description: Public Kontena Registry with auth
+expose: api
+
+variables:
+  KONTENA_LB_VIRTUAL_HOSTS:
+    type: string
+    default: registry.example.net
+    from:
+      prompt: KONTENA_LB_VIRTUAL_HOSTS
+  REGISTRY_HTTP_SECRET:
+    type: string
+    from:
+      vault: REGISTRY_HTTP_SECRET
+      random_string: 48
+  registry_htpasswd_user:
+    type: string
+    from:
+      prompt:
+  registry_htpasswd_password:
+    type: string
+    from:
+      prompt:
+
+services:
+  api:
+    image: kontena/registry:2.6.0
+    stateful: true
+    deploy:
+      wait_for_port: 80
+      interval: 1d
+    health_check:
+      protocol: http
+      port: 80
+      interval: 15
+      uri: /
+      initial_delay: 30
+      timeout: 2
+    environment:
+      - REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/registry
+      - REGISTRY_HTTP_ADDR=0.0.0.0:80
+      - REGISTRY_HTTP_SECRET=${REGISTRY_HTTP_SECRET}
+      - REGISTRY_AUTH=htpasswd
+      - REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm
+      - REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd
+      - KONTENA_LB_INTERNAL_PORT=80
+      - KONTENA_LB_VIRTUAL_HOSTS=${KONTENA_LB_VIRTUAL_HOSTS}
+      - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
+    hooks:
+      post_start:
+        - name: auth
+          cmd: htpasswd -Bbn {{registry_htpasswd_user}} {{registry_htpasswd_password}} > /auth/htpasswd
+          instances: 1
+          oneshot: true
+    volumes:
+      - /registry
+      - /auth
+    links:
+      - lb-ingress/lb
