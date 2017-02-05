@@ -1,5 +1,5 @@
 stack: matti/metabase
-version: 0.0.1
+version: 0.0.2
 description: http://www.metabase.com
 expose: server
 
@@ -45,6 +45,13 @@ services:
     deploy:
       wait_for_port: 3000
       interval: 1d
+    health_check:
+      protocol: http
+      port: 3000
+      interval: 60
+      uri: /
+      initial_delay: 360
+      timeout: 2
     environment:
       - MB_DB_FILE=/data/metabase.db
       # BUG just 'if link_lb' does not work (!)
