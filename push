@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+
+if [ "$1" == "all" ]; then
+  dirs=$(ls -d */)
+else
+  dirs="$1"
+fi
+
+for dir in $dirs; do
+  kontena stack reg push $dir/stack.yml
+done
