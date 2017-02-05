@@ -42,6 +42,9 @@ services:
   server:
     image: metabase/metabase:{{metabase_tag}}
     stateful: true
+    deploy:
+      wait_for_port: 3000
+      interval: 1d
     environment:
       - MB_DB_FILE=/data/metabase.db
       # BUG just 'if link_lb' does not work (!)
