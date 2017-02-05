@@ -1,0 +1,67 @@
+stack: matti/node-red
+version: 0.1.0
+description: Node-RED
+
+expose: app
+
+variables:
+  image:
+    type: string
+    default: mattipaksula/node-red:latest
+    from:
+      prompt:
+  link_lb:
+    type: boolean
+    from:
+      prompt:
+  linked_lb:
+    type: string
+    default: lb-ingress/lb
+    from:
+      prompt:
+  KONTENA_LB_VIRTUAL_HOSTS:
+    type: string
+    default: example.net
+    from:
+      prompt:
+  lb_force_https:
+    type: boolean
+    from:
+      prompt:
+  port:
+    type: integer
+    default: 1880
+    from:
+      prompt:
+
+services:
+  app:
+    image: {{ image }}
+    stateful: true
+    deploy:
+      wait_for_port: 1880
+      interval: 1d
+    health_check:
+      protocol: http
+      port: 1880
+      interval: 15
+      uri: /
+      initial_delay: 30
+      timeout: 2
+    environment:
+      # {% if link_lb == 'true' %}
+      - KONTENA_LB_INTERNAL_PORT=1880
+      - KONTENA_LB_VIRTUAL_HOSTS=${KONTENA_LB_VIRTUAL_HOSTS}
+      # {% if lb_force_https == 'true' %}
+      - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
+      # {% endif %}
+      # {% endif %}
+    volumes:
+      - /home/app
+    # {% if link_lb == 'true' %}
+    links:
+      - {{ linked_lb }}
+    # {% else %}
+    ports:
+      - ${port}:1880
+    # {% endif %}
