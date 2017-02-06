@@ -1,0 +1,30 @@
+stack: matti/vpn
+version: 0.0.1
+description: kontena vpn
+
+variables:
+  affinity:
+    type: string
+    from:
+      prompt:
+  node_public_ip:
+    type: string
+    from:
+      prompt:
+services:
+  server:
+    image: kontena/openvpn:ethwe
+    stateful: yes
+    affinity:
+      - {{ affinity }}
+    deploy:
+      interval: 1d
+    environment:
+      - OVPN_SERVER_URL=udp://{{node_public_ip}}:1194
+    ports:
+      - 1194:1194/udp
+    cap_add:
+      - NET_ADMIN
+
+#TODO: post install -- kontena service exec vpn/server /usr/local/bin/ovpn_getclient KONTENA_VPN_CLIENT > grid.ovpn
+#TODO: health_check to support udp
