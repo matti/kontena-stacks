@@ -1,0 +1,58 @@
+stack: matti/minio
+version: 0.0.1
+description: jakolehms minio with health_check, wait_for_port, https force
+
+variables:
+  lb_service:
+    type: string
+    from:
+      service_link:
+        prompt: Pick a loadbalancer
+        image: kontena/lb
+  lb_domain:
+    type: string
+    from:
+      prompt: Virtual host (domain) name for minio
+  access_key:
+    type: string
+    from:
+      vault: MINIO_ACCESS_KEY
+      random_string: 20
+    to:
+      vault: MINIO_ACCESS_KEY
+  secret_key:
+    type: string
+    from:
+      vault: MINIO_SECRET_KEY
+      random_string: 20
+    to:
+      vault: MINIO_SECRET_KEY
+services:
+  server:
+    image: minio/minio:latest
+    stateful: true
+    instances: 4
+    command: server http://server-1/export/1/ http://server-2/export/2/ http://server-3/export/3/ http://server-4/export/4/
+    deploy:
+      wait_for_port: 9000
+      interval: 1d
+    health_check:
+      protocol: http
+      port: 9000
+      interval: 60
+      uri: /minio/login
+      initial_delay: 60
+      timeout: 2
+    secrets:
+      - secret: MINIO_ACCESS_KEY
+        name: MINIO_ACCESS_KEY
+        type: env
+      - secret: MINIO_SECRET_KEY
+        name: MINIO_SECRET_KEY
+        type: env
+    environment:
+      - KONTENA_LB_INTERNAL_PORT=9000
+      - KONTENA_LB_VIRTUAL_HOSTS={{ lb_domain }}
+      - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
+    links:
+      - {{ lb_service }}
