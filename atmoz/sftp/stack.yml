@@ -1,0 +1,40 @@
+stack: matti/atmoz-sftp
+version: 0.0.1
+description: atmoz/sftp
+expose: atmoz-sftp
+variables:
+  image:
+    type: string
+    default: atmoz/sftp:alpine-3.5
+    from:
+      prompt:
+  user:
+    type: string
+    from:
+      prompt:
+  pass:
+    type: string
+    from:
+      prompt:
+  directory:
+    type: string
+    from:
+      prompt:
+  port:
+    type: integer
+    from:
+      prompt:
+services:
+  atmoz-sftp:
+    image: {{ image }}
+    deploy:
+      wait_for_port: 22
+    command: "{{ user }}:{{ pass }}:::{{ directory }}"
+    health_check:
+      protocol: tcp
+      port: 22
+      interval: 60
+      initial_delay: 60
+      timeout: 2
+    ports:
+      - "{{port}}:22"
