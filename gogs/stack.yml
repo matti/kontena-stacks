@@ -1,5 +1,5 @@
 stack: matti/gogs
-version: 0.0.1
+version: 0.0.2
 description: gogs
 expose: gogs
 variables:
@@ -30,7 +30,7 @@ services:
       wait_for_port: 3000
     stateful: true
     volumes:
-      - gogs:/data
+      - ${STACK}_gogs:/data
     environment:
       - KONTENA_LB_INTERNAL_PORT=3000
       - KONTENA_LB_VIRTUAL_HOSTS={{ lb_domain }}
@@ -53,7 +53,7 @@ services:
       wait_for_port: 5432
     stateful: true
     volumes:
-      - postgres:/var/lib/postgresql
+      - ${STACK}_postgres:/var/lib/postgresql
     environment:
       - POSTGRES_USER=gogs
       - POSTGRES_PASSWORD=gogs
