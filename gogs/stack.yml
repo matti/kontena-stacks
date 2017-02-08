@@ -1,5 +1,5 @@
 stack: matti/gogs
-version: 0.0.2
+version: 0.0.3
 description: gogs
 expose: gogs
 variables:
@@ -53,7 +53,7 @@ services:
       wait_for_port: 5432
     stateful: true
     volumes:
-      - ${STACK}_postgres:/var/lib/postgresql
+      - /var/lib/postgresql
     environment:
       - POSTGRES_USER=gogs
       - POSTGRES_PASSWORD=gogs
