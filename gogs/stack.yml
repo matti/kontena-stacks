@@ -1,0 +1,66 @@
+stack: matti/gogs
+version: 0.0.1
+description: gogs
+expose: gogs
+variables:
+  image:
+    type: string
+    default: gogs/gogs:latest
+    from:
+      prompt:
+  linked_lb:
+    type: string
+    default: lb-ingress/lb
+    from:
+      prompt: Linked loadbalancer
+  lb_domain:
+    type: string
+    default: gogs.example.net
+    from:
+      prompt:
+  ssh_port:
+    type: integer
+    from:
+      prompt:
+
+services:
+  gogs:
+    image: {{ image }}
+    deploy:
+      wait_for_port: 3000
+    stateful: true
+    volumes:
+      - gogs:/data
+    environment:
+      - KONTENA_LB_INTERNAL_PORT=3000
+      - KONTENA_LB_VIRTUAL_HOSTS={{ lb_domain }}
+      - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
+    health_check:
+      protocol: http
+      port: 3000
+      interval: 60
+      initial_delay: 60
+      timeout: 2
+    ports:
+      - "{{ssh_port}}:22"
+    links:
+      - {{ linked_lb }}
+      - postgres
+
+  postgres:
+    image: postgres:9.6.1-alpine
+    deploy:
+      wait_for_port: 5432
+    stateful: true
+    volumes:
+      - postgres:/var/lib/postgresql
+    environment:
+      - POSTGRES_USER=gogs
+      - POSTGRES_PASSWORD=gogs
+      - POSTGRES_DB=gogs
+    health_check:
+      protocol: tcp
+      port: 5432
+      interval: 60
+      initial_delay: 60
+      timeout: 2
