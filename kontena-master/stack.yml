@@ -1,0 +1,70 @@
+stack: matti/kontena-master
+version: 0.0.1
+description: Kontena Master
+expose: server
+
+variables:
+  image:
+    type: string
+    default: kontena/server:latest
+    from:
+      prompt:
+  instances:
+    type: integer
+    default: 1
+    from:
+      prompt:
+  deploy_strategy:
+    type: string
+    default: ha
+    from:
+      prompt:
+  mongodb_uri:
+    type: string
+    default: "mongodb://peer-1.kontena-mongodb-cluster.this-grid.kontena.local:27017,peer-2.kontena-mongodb-cluster.this-grid.kontena.local:27017,peer-3.kontena-mongodb-cluster.this-grid.kontena.local:27017/kontena_master"
+    from:
+      prompt:
+  vault_key:
+    type: string
+    from:
+      vault: "KONTENA_MASTER_VAULT_KEY"
+      random_string: 64
+  vault_iv:
+    type: string
+    from:
+      vault: "KONTENA_MASTER_VAULT_IV"
+      random_string: 64
+  initial_admin_code:
+    type: string
+    from:
+      random_string: 32
+  lb_domain:
+    type: string
+    default: master.example.net
+    from:
+      prompt:
+
+services:
+  server:
+    image: {{ image }}
+    instances: {{ instances }}
+    deploy:
+      strategy: {{ deploy_strategy }}
+      wait_for_port: 9292
+    # health_check:
+    #   protocol: http
+    #   port: 9292
+    #   interval: 60
+    #   uri: /
+    #   initial_delay: 60
+    #   timeout: 2
+    environment:
+      - RACK_ENV=production
+      - MONGODB_URI={{ mongodb_uri }}
+      - VAULT_KEY={{ vault_key }}
+      - VAULT_IV={{ vault_iv }}
+      - INITIAL_ADMIN_CODE={{ initial_admin_code }}
+      - ACME_ENDPOINT=https://acme-v01.api.letsencrypt.org/
+      - KONTENA_LB_INTERNAL_PORT=9292
+      - KONTENA_LB_VIRTUAL_HOSTS={{ lb_domain }}
+      - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
