@@ -1,0 +1,51 @@
+stack: matti/kontena-mongodb-cluster
+version: 0.0.1
+description: MongoDB 3.0 replica set to use with Kontena Master
+expose: peer
+
+variables:
+  replset:
+    type: string
+    default: kontena-mongodb-cluster
+    from:
+      prompt:
+  deploy_strategy:
+    type: string
+    default: ha
+    from:
+      prompt:
+
+services:
+  peer:
+    image: mongo:3.0
+    stateful: true
+    instances: 3
+    command: --replSet {{ replset }} --smallfiles
+    volumes:
+      - /data
+    deploy:
+      strategy: {{ deploy_strategy }}
+      wait_for_port: 27017
+    health_check:
+      protocol: tcp
+      port: 27017
+      initial_delay: 60
+      timeout: 2
+    hooks:
+      post_start:
+        - cmd: sleep 20
+          name: sleep
+          instances: 3
+          oneshot: true
+        - cmd: mongo --eval "printjson(rs.initiate());"
+          name: rs_initiate
+          instances: 3
+          oneshot: true
+        - cmd: mongo --eval "printjson(rs.add('peer-1'))"
+          name: rs_add1
+          instances: 3
+          oneshot: true
+        - cmd: mongo --eval "printjson(rs.add('peer-2'))"
+          name: rs_add2
+          instances: 3
+          oneshot: true
