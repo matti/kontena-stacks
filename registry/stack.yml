@@ -1,5 +1,5 @@
 stack: matti/registry
-version: 0.0.2
+version: 0.1.0
 description: Public Kontena Registry with auth
 expose: api
 
@@ -12,8 +12,11 @@ variables:
   REGISTRY_HTTP_SECRET:
     type: string
     from:
-      vault: REGISTRY_HTTP_SECRET
+      vault: "${STACK}_REGISTRY_HTTP_SECRET"
       random_string: 48
+    to:
+      vault: "${STACK}_REGISTRY_HTTP_SECRET"
+
   registry_htpasswd_user:
     type: string
     from:
