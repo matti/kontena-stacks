@@ -1,0 +1,20 @@
+stack: matti/kontena-mongodb-single
+version: 0.0.1
+description: Single MongoDB instance for Kontena Master
+
+expose: mongodb
+
+services:
+  mongodb:
+    image: mongo:3.0
+    stateful: true
+    command: --smallfiles
+    instances: 1
+    deploy:
+      strategy: ha
+      wait_for_port: 27017
+    health_check:
+      protocol: tcp
+      port: 27017
+      interval: 10
+      timeout: 2
