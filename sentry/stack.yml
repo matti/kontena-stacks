@@ -1,5 +1,5 @@
 stack: matti/sentry
-version: 0.0.1
+version: 0.0.2
 description: Sentry
 # TODO:
 # - removing this stack with --force always hangs when first run?
@@ -39,6 +39,8 @@ variables:
     from:
       vault: ${STACK}_SENTRY_SECRET_KEY
       random_string: 50
+    to:
+      vault: ${STACK}_SENTRY_SECRET_KEY
 
 services:
   smtp:
