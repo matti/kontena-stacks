@@ -1,0 +1,73 @@
+stack: matti/redis-sentinel
+version: 0.0.1
+description: Redis sentinel
+
+expose: lb
+
+variables:
+  lb_deploy_strategy:
+    type: string
+    default: daemon
+    from:
+      prompt:
+  redis_sentinel_deploy_strategy:
+    type: string
+    default: daemon
+    from:
+      prompt:
+
+services:
+  lb:
+    image: kontena/lb
+    stateful: no
+    instances: 1
+    deploy:
+      strategy: {{ lb_deploy_strategy }}
+      wait_for_port: 80
+      interval: 1d # re-deploy once in a day for security updates and freshness
+    # health_check:
+    #   protocol: http
+    #   port: 80
+    #   uri: /__health          # TODO: no idea why fails
+    #   interval: 60
+    #   initial_delay: 60
+    #   timeout: 2
+
+  redis-sentinel-node:
+    image: redis:3.0.7-alpine
+    instances: 5
+    deploy:
+      strategy: {{ redis_sentinel_deploy_strategy }}
+      wait_for_port: 6379
+    stateful: true
+    environment:
+      KONTENA_LB_MODE: tcp
+      KONTENA_LB_EXTERNAL_PORT: 6379
+      KONTENA_LB_INTERNAL_PORT: 6379
+      KONTENA_LB_CUSTOM_SETTINGS: |
+        option tcp-check
+        tcp-check connect
+        tcp-check send PING\r\n
+        tcp-check expect string +PONG
+        tcp-check send info\ replication\r\n
+        tcp-check expect string role:master
+        tcp-check send QUIT\r\n
+        tcp-check expect string +OK
+    links:
+      - lb
+
+  redis-sentinel-monitor:
+    image: mattipaksula/redis-sentinel-monitor
+    instances: 5
+    deploy:
+      strategy: {{ redis_sentinel_deploy_strategy }}
+    stateful: true
+    environment:
+      - MASTER_NAME=redis-sentinel-master
+      - QUORUM=3
+      - DOWN_AFTER=5000
+      - FAILOVER_TIMEOUT=30000
+      - MASTER=redis-sentinel-node-1.kontena.local
+      - SLAVES=redis-sentinel-node-2.kontena.local;redis-sentinel-node-3.kontena.local;redis-sentinel-node-4.kontena.local;redis-sentinel-node-5.kontena.local
+    links:
+      - redis-sentinel-node
