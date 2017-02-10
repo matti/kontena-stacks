@@ -33,7 +33,7 @@ services:
     #   initial_delay: 60
     #   timeout: 2
 
-  redis-sentinel-node:
+  node:
     image: redis:3.0.7-alpine
     instances: 5
     deploy:
@@ -54,9 +54,9 @@ services:
         tcp-check send QUIT\r\n
         tcp-check expect string +OK
     links:
-      - lb
+      - lb        # TODO is this needed with stacks?
 
-  redis-sentinel-monitor:
+  monitor:
     image: mattipaksula/redis-sentinel-monitor
     instances: 5
     deploy:
@@ -67,7 +67,7 @@ services:
       - QUORUM=3
       - DOWN_AFTER=5000
       - FAILOVER_TIMEOUT=30000
-      - MASTER=redis-sentinel-node-1.kontena.local
-      - SLAVES=redis-sentinel-node-2.kontena.local;redis-sentinel-node-3.kontena.local;redis-sentinel-node-4.kontena.local;redis-sentinel-node-5.kontena.local
-    links:
-      - redis-sentinel-node
+      - MASTER=node-1
+      - SLAVES=node-2;node-3;node-4;node-5
+    depends_on:
+      - node
