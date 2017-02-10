@@ -1,5 +1,5 @@
 stack: matti/redis-sentinel
-version: 0.0.1
+version: 0.0.2
 description: Redis sentinel
 
 expose: lb
@@ -25,12 +25,13 @@ services:
       strategy: {{ lb_deploy_strategy }}
       wait_for_port: 80
       interval: 1d # re-deploy once in a day for security updates and freshness
+    # TODO: does not become healthy
     # health_check:
     #   protocol: http
     #   port: 80
-    #   uri: /__health          # TODO: no idea why fails
+    #   uri: /__health
     #   interval: 60
-    #   initial_delay: 60
+    #   initial_delay: 10
     #   timeout: 2
 
   node:
@@ -54,7 +55,7 @@ services:
         tcp-check send QUIT\r\n
         tcp-check expect string +OK
     links:
-      - lb        # TODO is this needed with stacks?
+      - lb
 
   monitor:
     image: mattipaksula/redis-sentinel-monitor
