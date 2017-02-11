@@ -1,5 +1,5 @@
 stack: matti/sentry
-version: 0.0.2
+version: 0.0.3
 description: Sentry
 # TODO:
 # - removing this stack with --force always hangs when first run?
@@ -8,9 +8,13 @@ description: Sentry
 expose: web
 
 variables:
+  affinity:
+    type: string
+    from:
+      prompt:
   sentry_image:
     type: string
-    default: sentry:8.7.0
+    default: sentry:8.13.0
     from:
       prompt:
   lb_service:
@@ -45,16 +49,24 @@ variables:
 services:
   smtp:
     image: tianon/exim4
+    affinity:
+      - {{ affinity }}
 
   memcached:
     image: memcached:1.4
+    affinity:
+      - {{ affinity }}
 
   redis:
     image: redis:3.2-alpine
+    affinity:
+      - {{ affinity }}
 
   postgres:
     image: postgres:9.5-alpine
     stateful: yes
+    affinity:
+      - {{ affinity }}
     volumes:
       - /var/lib/postgresql
 
@@ -62,6 +74,8 @@ services:
     image: {{ sentry_image }}
     volumes:
       - /var/lib/sentry
+    affinity:
+      - {{ affinity }}
     environment:
       - SENTRY_SECRET_KEY={{ sentry_secret_key }}
       - SENTRY_MEMCACHED_HOST=memcached
@@ -99,6 +113,8 @@ services:
   cron:
     image: {{ sentry_image }}
     command: run cron
+    affinity:
+      - {{ affinity }}
     environment:
       - SENTRY_SECRET_KEY={{ sentry_secret_key }}
       - SENTRY_MEMCACHED_HOST=memcached
@@ -111,6 +127,8 @@ services:
   worker:
     image: {{ sentry_image }}
     command: run worker
+    affinity:
+      - {{ affinity }}
     environment:
       - SENTRY_SECRET_KEY={{ sentry_secret_key }}
       - SENTRY_MEMCACHED_HOST=memcached
