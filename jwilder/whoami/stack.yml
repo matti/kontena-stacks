@@ -1,0 +1,38 @@
+stack: matti/jwilder-whoami
+version: 0.0.1
+description: jwilder/whoami
+
+expose: web
+
+variables:
+  lb_service:
+    type: string
+    from:
+      service_link:
+        prompt: lb
+        image: kontena/lb
+  kontena_lb_virtual_hosts:
+    type: string
+    default: example.net
+    from:
+      prompt:
+
+services:
+  web:
+    image: jwilder/whoami
+    deploy:
+      strategy: daemon
+      wait_for_port: 8000
+    environment:
+      - KONTENA_LB_MODE=http
+      - KONTENA_LB_INTERNAL_PORT=8000
+      - KONTENA_LB_VIRTUAL_HOSTS={{ kontena_lb_virtual_hosts }}
+    health_check:
+      protocol: http
+      port: 8000
+      interval: 60
+      uri: /
+      initial_delay: 60
+      timeout: 2
+    links:
+      - {{ lb_service }}
