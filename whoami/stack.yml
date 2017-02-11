@@ -1,0 +1,38 @@
+stack: matti/whoami
+version: 0.0.1
+description: mattipaksula/whoami
+
+expose: web
+
+variables:
+  lb_service:
+    type: string
+    from:
+      service_link:
+        prompt: lb
+        image: kontena/lb
+  kontena_lb_virtual_hosts:
+    type: string
+    default: example.net
+    from:
+      prompt:
+
+services:
+  web:
+    image: mattipaksula/whoami
+    deploy:
+      strategy: daemon
+      wait_for_port: 80
+    environment:
+      - KONTENA_LB_MODE=http
+      - KONTENA_LB_INTERNAL_PORT=80
+      - KONTENA_LB_VIRTUAL_HOSTS={{ kontena_lb_virtual_hosts }}
+    health_check:
+      protocol: http
+      port: 80
+      interval: 60
+      uri: /
+      initial_delay: 60
+      timeout: 2
+    links:
+      - {{ lb_service }}
