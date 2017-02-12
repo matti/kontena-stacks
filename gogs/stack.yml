@@ -1,8 +1,13 @@
 stack: matti/gogs
-version: 0.0.3
+version: 0.1.0
 description: gogs
 expose: gogs
 variables:
+  affinity:
+    type: string
+    default: label!=no-gogs
+    from:
+      prompt:
   image:
     type: string
     default: gogs/gogs:latest
@@ -20,6 +25,7 @@ variables:
       prompt:
   ssh_port:
     type: integer
+    default: 2222
     from:
       prompt:
 
@@ -30,7 +36,9 @@ services:
       wait_for_port: 3000
     stateful: true
     volumes:
-      - ${STACK}_gogs:/data
+      - /data
+    affinity:
+      - {{ affinity }}
     environment:
       - KONTENA_LB_INTERNAL_PORT=3000
       - KONTENA_LB_VIRTUAL_HOSTS={{ lb_domain }}
@@ -38,6 +46,7 @@ services:
     health_check:
       protocol: http
       port: 3000
+      uri: /user/login
       interval: 60
       initial_delay: 60
       timeout: 2
@@ -45,6 +54,7 @@ services:
       - "{{ssh_port}}:22"
     links:
       - {{ linked_lb }}
+    depends_on:
       - postgres
 
   postgres:
@@ -54,6 +64,8 @@ services:
     stateful: true
     volumes:
       - /var/lib/postgresql
+    affinity:
+      - {{ affinity }}
     environment:
       - POSTGRES_USER=gogs
       - POSTGRES_PASSWORD=gogs
