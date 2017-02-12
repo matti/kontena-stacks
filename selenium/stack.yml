@@ -1,0 +1,110 @@
+stack: matti/selenium
+version: 0.0.1
+description: selenium hub with chrome and firefox
+expose: hub
+
+variables:
+  version_tag:
+    type: string
+    default: 3.0.1
+
+  hub_affinity:
+    type: string
+    default: label!=no-selenium-hub
+    from:
+      prompt:
+  hub_lb_service:
+    type: string
+    from:
+      service_link:
+        prompt: Pick a loadbalancer
+        image: kontena/lb
+  hub_lb_domain:
+    type: string
+    default: selenium.example.net
+    from:
+      prompt:
+  hub_http_basic_auth_user:
+    type: string
+    default: admin
+    from:
+      prompt:
+  hub_http_basic_auth_pass:
+    type: string
+    default: secret
+    from:
+      prompt:
+  node_chrome_affinity:
+    type: string
+    default: label!=no-selenium-chrome
+    from:
+      prompt:
+  node_chrome_instances:
+    type: integer
+    default: 1
+    from:
+      prompt:
+
+  node_firefox_affinity:
+    type: string
+    default: label!=no-selenium-firefox
+    from:
+      prompt:
+  node_firefox_instances:
+    type: integer
+    default: 1
+    from:
+      prompt:
+
+services:
+  hub:
+    image: selenium/hub:{{ version_tag }}
+    deploy:
+      wait_for_port: 4444
+    health_check:
+      protocol: http
+      port: 4444
+      interval: 60
+      uri: /
+      initial_delay: 60
+      timeout: 2
+    affinity:
+      - {{ hub_affinity }}
+    environment:
+      - GRID_TIMEOUT=30000
+      - KONTENA_LB_BASIC_AUTH_SECRETS=user {{ hub_http_basic_auth_user }} insecure-password {{ hub_http_basic_auth_pass }}
+      - KONTENA_LB_INTERNAL_PORT=4444
+      - KONTENA_LB_VIRTUAL_HOSTS={{ hub_lb_domain }}
+      - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
+    volumes:
+      # Use host entropy to not run out of it: https://github.com/SeleniumHQ/docker-selenium/issues/21#issuecomment-68998634
+      - /dev/urandom:/dev/random
+    links:
+      - {{ hub_lb_service }}
+
+  node-chrome-debug:
+    image: selenium/node-chrome-debug:{{ version_tag }}
+    instances: {{ node_chrome_instances }}
+    affinity:
+      - {{ node_chrome_affinity }}
+    environment:
+      - HUB_PORT_4444_TCP_ADDR=hub
+      - HUB_PORT_4444_TCP_PORT=4444
+      # https://github.com/SeleniumHQ/docker-selenium/issues/87#issuecomment-187659234
+      - DBUS_SESSION_BUS_ADDRESS=/dev/null
+    volumes:
+      # https://github.com/SeleniumHQ/docker-selenium/issues/79#issuecomment-133083785
+      - /dev/shm:/dev/shm
+    depends_on:
+      - hub
+
+  node-firefox-debug:
+    image: selenium/node-firefox-debug:{{ version_tag }}
+    instances: {{ node_firefox_instances }}
+    affinity:
+      - {{ node_firefox_affinity }}
+    environment:
+      - HUB_PORT_4444_TCP_ADDR=hub
+      - HUB_PORT_4444_TCP_PORT=4444
+    depends_on:
+      - hub
