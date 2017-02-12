@@ -1,5 +1,5 @@
 stack: matti/registry
-version: 0.1.0
+version: 0.1.1
 description: Public Kontena Registry with auth
 expose: api
 
@@ -17,11 +17,18 @@ variables:
     to:
       vault: "${STACK}_REGISTRY_HTTP_SECRET"
 
+  htpasswd:
+    type: boolean
+    default: false
+    from:
+      prompt:
   registry_htpasswd_user:
+    only_if: htpasswd
     type: string
     from:
       prompt:
   registry_htpasswd_password:
+    only_if: htpasswd
     type: string
     from:
       prompt:
@@ -44,20 +51,25 @@ services:
       - REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/registry
       - REGISTRY_HTTP_ADDR=0.0.0.0:80
       - REGISTRY_HTTP_SECRET=${REGISTRY_HTTP_SECRET}
+      # {% if htpasswd %}
       - REGISTRY_AUTH=htpasswd
       - REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm
       - REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd
+      # {% endif %}
       - KONTENA_LB_INTERNAL_PORT=80
       - KONTENA_LB_VIRTUAL_HOSTS=${KONTENA_LB_VIRTUAL_HOSTS}
       - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
     hooks:
+      # {% if htpasswd %}
       post_start:
         - name: auth
           cmd: htpasswd -Bbn {{registry_htpasswd_user}} {{registry_htpasswd_password}} > /auth/htpasswd
           instances: 1
           oneshot: true
+      # {% endif %}
     volumes:
       - /registry
       - /auth
+
     links:
       - lb-ingress/lb
