@@ -1,0 +1,43 @@
+stack: matti/pgweb
+version: 0.0.1
+description: sosedoff/pg-web
+
+variables:
+  affinity:
+    type: string
+    default: no-pgweb
+    from:
+      prompt:
+  lb_service:
+    type: string
+    from:
+      service_link:
+        prompt: Pick a loadbalancer
+        image: kontena/lb
+  lb_domain:
+    type: string
+    default: pgweb.example.net
+    from:
+      prompt:
+
+services:
+  web:
+    image: sosedoff/pgweb:latest
+    deploy:
+      wait_for_port: 8081
+      interval: 1d
+    health_check:
+      protocol: http
+      port: 8081
+      interval: 60
+      uri: /
+      initial_delay: 60
+      timeout: 2
+    affinity:
+      - {{ affinity }}
+    environment:
+      - KONTENA_LB_INTERNAL_PORT=8081
+      - KONTENA_LB_VIRTUAL_HOSTS={{ lb_domain }}
+      - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
+    links:
+      - {{ lb_service }}
