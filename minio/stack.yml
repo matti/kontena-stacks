@@ -1,8 +1,13 @@
 stack: matti/minio
-version: 0.0.1
+version: 0.1.0
 description: jakolehms minio with health_check, wait_for_port, https force
 
 variables:
+  affinity:
+    type: string
+    default: label!=no-minio
+    from:
+      prompt:
   lb_service:
     type: string
     from:
@@ -16,17 +21,17 @@ variables:
   access_key:
     type: string
     from:
-      vault: MINIO_ACCESS_KEY
+      vault: ${STACK}_MINIO_ACCESS_KEY
       random_string: 20
     to:
-      vault: MINIO_ACCESS_KEY
+      vault: ${STACK}_MINIO_ACCESS_KEY
   secret_key:
     type: string
     from:
-      vault: MINIO_SECRET_KEY
+      vault: ${STACK}_MINIO_SECRET_KEY
       random_string: 20
     to:
-      vault: MINIO_SECRET_KEY
+      vault: ${STACK}_MINIO_SECRET_KEY
 services:
   server:
     image: minio/minio:latest
@@ -36,6 +41,8 @@ services:
     deploy:
       wait_for_port: 9000
       interval: 1d
+    affinity:
+      - {{ affinity }}
     health_check:
       protocol: http
       port: 9000
@@ -44,10 +51,10 @@ services:
       initial_delay: 60
       timeout: 2
     secrets:
-      - secret: MINIO_ACCESS_KEY
+      - secret: ${STACK}_MINIO_ACCESS_KEY
         name: MINIO_ACCESS_KEY
         type: env
-      - secret: MINIO_SECRET_KEY
+      - secret: ${STACK}_MINIO_SECRET_KEY
         name: MINIO_SECRET_KEY
         type: env
     environment:
