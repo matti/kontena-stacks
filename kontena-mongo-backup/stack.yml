@@ -1,0 +1,89 @@
+stack: matti/kontena-mongo-backup
+version: 0.0.1
+description: mattipaksula/mongo-backup
+
+variables:
+  worker_image:
+    type: string
+    default: mattipaksula/mongo-backup
+    from:
+      prompt:
+  worker_affinity:
+    type: string
+    default: label!=no-kontena-mongo-backup
+    from:
+      prompt:
+  mongodb_host:
+    type: string
+    from:
+      prompt:
+  interval:
+    type: string
+    default: 1h
+    from:
+      prompt:
+  local_keep:
+    type: integer
+    default: 3
+    from:
+      prompt:
+  mongodb_oplog:
+    type: boolean   # todo what happens?
+    default: false
+    from:
+      prompt:
+  mongodb_lock:
+    type: boolean   # todo what happens?
+    default: true
+    from:
+      prompt:
+  slack:
+    type: boolean
+    default: false
+    from:
+      prompt:
+  slack_webhook_url:
+    type: string
+    from:
+      prompt:
+  slack_username:
+    type: string
+    default: mongo-backup
+    from:
+      prompt:
+  slack_notify_on_success:
+    type: boolean
+    default: true
+    from:
+      prompt:
+  slack_notify_on_warning:
+    type: boolean
+    default: true
+    from:
+      prompt:
+  slack_notify_on_failure:
+    type: boolean
+    default: true
+    from:
+      prompt:
+
+services:
+  worker:
+    image: {{ worker_image }}
+    affinity: {{ worker_affinity }}
+    environment:
+      - MONGODB_HOST={{ mongodb_host }}
+      - INTERVAL={{ interval }}
+      - LOCAL_KEEP={{ local_keep }}
+      - MONGODB_OPLOG={{ mongodb_oplog }}
+      - MONGODB_LOCK={{ mongodb_lock }}
+      # {% if slack %}
+      - SLACK_WEBHOOK_URL={{ slack_webhook_url }}
+      - SLACK_NOTIFY_ON_SUCCESS={{ slack_notify_on_success }}
+      - SLACK_NOTIFY_ON_WARNING={{ slack_notify_on_warning }}
+      - SLACK_NOTIFY_ON_FAILURE={{ slack_notify_on_failure }}
+      - SLACK_USERNAME={{ slack_username }}
+      # {% endif %}
+    restart: unless-stopped
+    volumes:
+      - /backup
