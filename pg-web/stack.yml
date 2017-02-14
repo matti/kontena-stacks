@@ -5,7 +5,7 @@ description: sosedoff/pg-web
 variables:
   affinity:
     type: string
-    default: no-pgweb
+    default: label!=no-pgweb
     from:
       prompt:
   lb_service:
