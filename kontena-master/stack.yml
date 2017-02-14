@@ -1,5 +1,5 @@
 stack: matti/kontena-master
-version: 0.0.2
+version: 0.0.3
 description: Kontena Master
 expose: server
 
@@ -61,13 +61,13 @@ services:
     deploy:
       strategy: {{ deploy_strategy }}
       wait_for_port: 9292
-    # health_check:
-    #   protocol: http
-    #   port: 9292
-    #   interval: 60
-    #   uri: /
-    #   initial_delay: 60
-    #   timeout: 2
+    health_check:
+      protocol: http
+      port: 9292
+      interval: 60
+      uri: /
+      initial_delay: 60
+      timeout: 2
     environment:
       - RACK_ENV=production
       - MONGODB_URI={{ mongodb_uri }}
