@@ -1,0 +1,137 @@
+stack: matti/drone
+version: 0.0.1
+description: drone
+
+expose: server
+
+variables:
+  image_drone:
+    type: string
+    default: drone/drone:0.5
+    from:
+      prompt:
+
+  affinity_server:
+    type: string
+    default: label!=no-drone-server
+    from:
+      prompt:
+  affinity_agent:
+    type: string
+    default: label!=no-drone-agent
+    from:
+      prompt:
+
+  link_lb:
+    type: boolean
+    default: true
+    from:
+      prompt:
+  linked_lb:
+    only_if: link_lb
+    type: string
+    default: lb-ingress/lb
+    from:
+      prompt: Linked loadbalancer
+  lb_domain:
+    only_if: link_lb
+    type: string
+    default: drone.example.net
+    from:
+      prompt:
+
+  admin_users:
+    type: string
+    from:
+      vault: ${STACK}_DRONE_ADMIN_USERNAMES
+      prompt: Admin usernames (comma separated)
+    to:
+      vault: ${STACK}_DRONE_ADMIN_USERNAMES
+  drone_shared_secret:
+    type: string
+    from:
+      vault: ${STACK}_DRONE_SHARED_SECRET
+      random_string: 24
+    to:
+      vault: ${STACK}_DRONE_SHARED_SECRET
+
+  github_client_id:
+    type: string
+    from:
+      vault: ${STACK}_DRONE_GITHUB_CLIENT_ID
+      prompt: Github client id
+    to:
+      vault: ${STACK}_DRONE_GITHUB_CLIENT_ID
+  github_client_secret:
+    type: string
+    from:
+      vault: ${STACK}_DRONE_GITHUB_CLIENT_SECRET
+      prompt: Github client secret
+    to:
+      vault: ${STACK}_DRONE_GITHUB_CLIENT_SECRET
+
+services:
+  server:
+    image: {{ image_drone }}
+    stateful: true
+    deploy:
+      strategy: ha
+      wait_for_port: 80
+    affinity:
+      - {{ affinity_server }}
+    environment:
+      - DRONE_GITHUB=true
+      - DRONE_SERVER_ADDR=0.0.0.0:80
+      - DRONE_OPEN=true
+      - DATABASE_DRIVER=sqlite3
+      - DATABASE_CONFIG=/var/lib/drone/drone.sqlite
+    # {% if link_lb %}
+      - KONTENA_LB_INTERNAL_PORT=80
+      - KONTENA_LB_VIRTUAL_HOSTS={{ lb_domain }}
+      - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
+    # {% endif %}
+    secrets:
+      - secret: ${STACK}_DRONE_GITHUB_CLIENT_ID
+        name: DRONE_GITHUB_CLIENT
+        type: env
+      - secret: ${STACK}_DRONE_GITHUB_CLIENT_SECRET
+        name: DRONE_GITHUB_SECRET
+        type: env
+      - secret: ${STACK}_DRONE_SHARED_SECRET
+        name: DRONE_AGENT_SECRET
+        type: env
+      - secret: ${STACK}_DRONE_ADMIN_USERNAMES
+        name: DRONE_ADMIN
+        type: env
+    health_check:
+      protocol: http
+      port: 80
+      uri: /
+      interval: 60
+      initial_delay: 60
+      timeout: 2
+    volumes:
+      - /var/lib/drone
+    links:
+    # {% if link_lb %}
+      - {{ linked_lb }}
+    # {% endif %}
+
+  agent:
+    image: {{ image_drone }}
+    affinity:
+    # {% assign affinity_agent_array = affinity_agent | split: "," %}
+    # {% for affinity in affinity_agent_array %}
+      - {{ affinity }}
+    # {% endfor %}
+    environment:
+      - DRONE_SERVER=ws://server:80/ws/broker
+    secrets:
+      - secret: ${STACK}_DRONE_SHARED_SECRET
+        name: DRONE_SECRET
+        type: env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: agent
+    depends_on:
+      - server
