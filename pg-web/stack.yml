@@ -1,5 +1,5 @@
 stack: matti/pg-web
-version: 0.0.1
+version: 0.0.2
 description: sosedoff/pg-web
 
 variables:
@@ -15,8 +15,14 @@ variables:
         prompt: Pick a loadbalancer
         image: kontena/lb
   lb_domain:
+    only_if: lb_service
     type: string
     default: pgweb.example.net
+    from:
+      prompt:
+  lb_https_redirect:
+    only_if: lb_service
+    type: boolean
     from:
       prompt:
 
@@ -38,6 +44,8 @@ services:
     environment:
       - KONTENA_LB_INTERNAL_PORT=8081
       - KONTENA_LB_VIRTUAL_HOSTS={{ lb_domain }}
+      # {% if lb_https_redirect %}
       - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
+      # {% endif %}
     links:
       - {{ lb_service }}
