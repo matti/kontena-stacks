@@ -41,12 +41,13 @@ variables:
     default: true
     from:
       prompt:
-  linked_lb:
+  lb_service:
     only_if: link_lb
     type: string
-    default: lb-ingress/lb
     from:
-      prompt: Linked loadbalancer
+      service_link:
+        prompt: Pick a loadbalancer
+        image: kontena/lb
   lb_domain:
     only_if: link_lb
     type: string
@@ -88,7 +89,7 @@ services:
           oneshot: true
     links:
     # {% if link_lb %}
-      - {{ linked_lb }}
+      - {{ lb_service }}
     # {% endif %}
     depends_on:
       - something
