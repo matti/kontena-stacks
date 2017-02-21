@@ -1,5 +1,5 @@
 stack: matti/kontena-mongo-backup
-version: 0.0.1
+version: 0.0.2
 description: mattipaksula/mongo-backup
 
 variables:
@@ -15,6 +15,7 @@ variables:
       prompt:
   mongodb_host:
     type: string
+    default: mongo
     from:
       prompt:
   interval:
@@ -28,13 +29,13 @@ variables:
     from:
       prompt:
   mongodb_oplog:
-    type: boolean   # todo what happens?
-    default: false
+    type: boolean
+    # default: BUG doesn't matter https://github.com/kontena/kontena/issues/1854
     from:
       prompt:
   mongodb_lock:
-    type: boolean   # todo what happens?
-    default: true
+    type: boolean
+    # default: true BUG doesn't matter https://github.com/kontena/kontena/issues/1854
     from:
       prompt:
   slack:
@@ -44,6 +45,7 @@ variables:
       prompt:
   slack_webhook_url:
     type: string
+    default: https://hooks.slack.com/services/...
     from:
       prompt:
   slack_username:
@@ -70,7 +72,8 @@ variables:
 services:
   worker:
     image: {{ worker_image }}
-    affinity: {{ worker_affinity }}
+    affinity:
+      - {{ worker_affinity }}
     environment:
       - MONGODB_HOST={{ mongodb_host }}
       - INTERVAL={{ interval }}
@@ -81,9 +84,8 @@ services:
       - SLACK_WEBHOOK_URL={{ slack_webhook_url }}
       - SLACK_NOTIFY_ON_SUCCESS={{ slack_notify_on_success }}
       - SLACK_NOTIFY_ON_WARNING={{ slack_notify_on_warning }}
-      - SLACK_NOTIFY_ON_FAILURE={{ slack_notify_on_failure }}
+      - SLACK_NOTIFY_ON_FAILURE={{ slack_notify_on_failure }}
       - SLACK_USERNAME={{ slack_username }}
       # {% endif %}
-    restart: unless-stopped
     volumes:
       - /backup
