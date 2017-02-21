@@ -1,0 +1,93 @@
+stack: matti/grafana
+version: 0.0.1
+description: grafana
+expose: web
+
+variables:
+  affinity_web:
+    type: string
+    default: label!=no-grafana
+    from:
+      prompt:
+  image_web:
+    type: string
+    default: grafana/grafana:latest
+    from:
+      prompt:
+  # http://docs.grafana.org/installation/configuration/
+  gf_security_admin_user:
+    type: string
+    default: admin
+    from:
+      prompt:
+  gf_security_admin_password:
+    type: string
+    default: nimda
+    from:
+      prompt:
+  gf_users_allow_sign_up:
+    type: string
+    default: "false"
+    from:
+      prompt:
+  gf_install_plugins:
+    type: string
+    default: grafana-clock-panel,grafana-simple-json-datasource
+    from:
+      prompt:
+  link_lb:
+    type: boolean
+    from:
+      prompt:
+  lb_service:
+    only_if: link_lb
+    type: string
+    from:
+      service_link:
+        prompt: Pick a loadbalancer
+        image: kontena/lb
+  lb_domain:
+    only_if: link_lb
+    type: string
+    default: grafana.example.net
+    from:
+      prompt:
+  lb_https_redirect:
+    only_if: link_lb
+    type: boolean
+    from:
+      prompt:
+
+services:
+  web:
+    image: {{ image_web }}
+    stateful: true
+    deploy:
+      strategy: ha
+      wait_for_port: 3000
+      interval: 1d
+    affinity:
+      - {{ affinity_web }}
+    volumes:
+      - /var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER={{ gf_security_admin_user }}
+      - GF_SECURITY_ADMIN_PASSWORD={{ gf_security_admin_password }}
+      - GF_USERS_ALLOW_SIGN_UP={{ gf_users_allow_sign_up }}
+      - GF_INSTALL_PLUGINS={{ gf_install_plugins }}
+      - KONTENA_LB_INTERNAL_PORT=3000
+      - KONTENA_LB_VIRTUAL_HOSTS={{ lb_domain }}
+      # {% if lb_https_redirect %}
+      - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
+      # {% endif %}
+    health_check:
+      protocol: http
+      port: 3000
+      uri: /login
+      interval: 60
+      initial_delay: 60
+      timeout: 2
+    links:
+    # {% if link_lb %}
+      - {{ lb_service }}
+    # {% endif %}
