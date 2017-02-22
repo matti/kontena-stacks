@@ -1,0 +1,69 @@
+stack: matti/weavescope
+version: 0.0.1
+expose: app
+variables:
+  image:
+    type: string
+    default: weaveworks/scope:0.17.1
+    from:
+      prompt:
+  lb_service:
+    type: string
+    required: false
+    from:
+      service_link:
+        prompt: Pick a loadbalancer
+        image: kontena/lb
+  lb_domain:
+    only_if: lb_service
+    type: string
+    default: weavescope.example.net
+    from:
+      prompt:
+  lb_https_redirect:
+    only_if: lb_service
+    type: boolean
+    from:
+      prompt:
+
+services:
+  app:
+    image: "${image}"
+    command: --no-probe --weave=false
+    deploy:
+      strategy: ha
+      wait_for_port: 4040
+      interval: 1d
+    health_check:
+      protocol: http
+      port: 4040
+      uri: /
+      interval: 60
+      initial_delay: 60
+      timeout: 2
+    environment:
+    # {% if lb_service %}
+      - KONTENA_LB_INTERNAL_PORT=4040
+      - KONTENA_LB_VIRTUAL_HOSTS={{ lb_domain }}
+      # {% if lb_https_redirect %}
+      - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
+      # {% endif %}
+    # {% endif %}
+    links:
+    # {% if lb_service %}
+      - {{ lb_service }}
+    # {% endif %}
+
+  probe:
+    image: "${image}"
+    privileged: true
+    network_mode: host
+    pid: host
+    deploy:
+      strategy: daemon
+    command: --probe.docker=true --weave=false --no-app app.${STACK}.${GRID}.kontena.local:4040
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/scope/plugins
+    depends_on:
+      - app
