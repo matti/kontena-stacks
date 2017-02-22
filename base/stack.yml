@@ -36,14 +36,9 @@ variables:
       random_string: 48
     to:
       vault: "${STACK}_some_secret"
-  link_lb:
-    type: boolean
-    default: true
-    from:
-      prompt:
   lb_service:
-    only_if: link_lb
     type: string
+    required: false
     from:
       service_link:
         prompt: Pick a loadbalancer
@@ -52,6 +47,11 @@ variables:
     only_if: link_lb
     type: string
     default: base.example.net
+    from:
+      prompt:
+  lb_https_redirect:
+    only_if: lb_service
+    type: boolean
     from:
       prompt:
 
@@ -69,10 +69,12 @@ services:
     volumes:
       - /data
     environment:
-    # {% if link_lb %}
+    # {% if lb_service %}
       - KONTENA_LB_INTERNAL_PORT={{ internal_port_web }}
       - KONTENA_LB_VIRTUAL_HOSTS={{ lb_domain }}
+      # {% if lb_https_redirect %}
       - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
+      # {% endif %}
     # {% endif %}
     health_check:
       protocol: http
@@ -88,7 +90,7 @@ services:
           instances: 1
           oneshot: true
     links:
-    # {% if link_lb %}
+    # {% if lb_service %}
       - {{ lb_service }}
     # {% endif %}
     depends_on:
