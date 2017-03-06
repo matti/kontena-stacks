@@ -7,5 +7,5 @@ else
 fi
 
 for dir in $dirs; do
-  kontena stack reg push $dir/stack.yml
+  kontena stack reg push $dir/kontena.yml
 done
