@@ -1,0 +1,67 @@
+stack: matti/influxdb
+version: 0.0.1
+
+expose: api
+
+variables:
+  image:
+    type: string
+    default: influxdb:1.2-alpine
+    from:
+      prompt:
+  affinity:
+    type: string
+    default: label!=no-influxdb
+    from:
+      prompt:
+  lb_service:
+    type: string
+    required: false
+    from:
+      service_link:
+        prompt: Pick a loadbalancer
+        image: kontena/lb
+  lb_domain:
+    only_if: lb_service
+    type: string
+    default: influxdb.kontena.rocks
+    from:
+      prompt:
+  lb_https_redirect:
+    only_if: lb_service
+    type: boolean
+    from:
+      prompt:
+
+services:
+  api:
+    image: {{ image }}
+    affinity:
+      - {{ affinity }}
+    stateful: true
+    instances: 1
+    deploy:
+      wait_for_port: 8086
+      interval: 1d
+    volumes:
+      - /var/lib/influxdb
+    environment:
+    # {% if lb_service %}
+      - KONTENA_LB_INTERNAL_PORT=8086
+      - KONTENA_LB_VIRTUAL_HOSTS={{ lb_domain }}
+      # {% if lb_https_redirect %}
+      - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
+      # {% endif %}
+    # {% endif %}
+
+    ports:
+      # {% if lb_service %}
+      - 8081:8086
+      # {% else %}
+      - 8082:8086
+      # {% endif %}
+
+    links:
+    # {% if lb_service %}
+      - {{ lb_service }}
+    # {% endif %}
