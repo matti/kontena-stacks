@@ -44,7 +44,7 @@ variables:
         prompt: Pick a loadbalancer
         image: kontena/lb
   lb_domain:
-    only_if: link_lb
+    only_if: lb_service
     type: string
     default: base.example.net
     from:
