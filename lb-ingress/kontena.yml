@@ -1,14 +1,20 @@
 stack: matti/lb-ingress
-version: 0.1.0
+version: 0.1.1
 description: Loadbalancer ingress for http/https
 expose: lb
 
 variables:
+  affinity:
+    type: boolean
+    from:
+      prompt:
   lb_affinity:
+    only_if: affinity
     type: string
     default: label==lb-ingress
     from:
       prompt: Affinity
+
   lb_certs:
     type: array
     required: false
@@ -18,7 +24,7 @@ variables:
     type: string
     from:
       vault: LB_STATS_PASSWORD
-      random_string: 12
+      random_string: 24
     to:
       vault: LB_STATS_PASSWORD
 
@@ -30,7 +36,7 @@ services:
       # {% if lb_certs %}
       - 443:443
       # {% endif %}
-    # {% if lb_affinity %}
+    # {% if affinity %}
     affinity:
       - {{ lb_affinity }}
     # {% endif %}
@@ -49,9 +55,9 @@ services:
         name: STATS_PASSWORD
         type: env
       # {% if lb_certs %}
-      # {% for cert in lb_certs %}
+      #   {% for cert in lb_certs %}
       - secret: {{ cert }}
         name: SSL_CERTS
         type: env
-      # {% endfor %}
+      #   {% endfor %}
       # {% endif %}
