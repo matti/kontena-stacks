@@ -1,0 +1,24 @@
+stack: matti/sherpa
+version: 0.0.1
+description: djenriquez/sherpa
+
+expose: sherpa
+
+variables:
+  sherpa_image:
+    type: string
+    default: djenriquez/sherpa
+    from:
+      prompt:
+  sherpa_internal_port:
+    type: integer
+    default: 4550
+
+services:
+  sherpa:
+    image: {{ sherpa_image }}
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock
+    command: --allow
+    ports:
+      - 2375:{{ sherpa_internal_port }}
