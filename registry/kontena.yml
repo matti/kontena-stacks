@@ -1,12 +1,12 @@
 stack: matti/registry
-version: 0.1.1
+version: 0.1.2
 description: Public Kontena Registry with auth
 expose: api
 
 variables:
   KONTENA_LB_VIRTUAL_HOSTS:
     type: string
-    default: registry.example.net
+    default: registry.kontena.rocks
     from:
       prompt: KONTENA_LB_VIRTUAL_HOSTS
   REGISTRY_HTTP_SECRET:

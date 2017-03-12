@@ -44,12 +44,12 @@ services:
       strategy: daemon
       wait_for_port: 80
       interval: 1d # re-deploy once in a day for security updates and freshness
-    health_check:
-      protocol: http
-      port: 80
-      uri: /__health
-    environment:
-      - KONTENA_LB_HEALTH_URI=/__health
+    # health_check:
+    #   protocol: http
+    #   port: 80
+    #   uri: /__health
+    # environment:
+    #   - KONTENA_LB_HEALTH_URI=/__health
     secrets:
       - secret: LB_STATS_PASSWORD
         name: STATS_PASSWORD

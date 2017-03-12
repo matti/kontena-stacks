@@ -23,12 +23,5 @@ services:
       - KONTENA_LB_MODE=http
       - KONTENA_LB_INTERNAL_PORT=80
       - KONTENA_LB_VIRTUAL_HOSTS={{ KONTENA_LB_VIRTUAL_HOSTS }}
-    health_check:
-      protocol: http
-      port: 80
-      interval: 60
-      uri: /__health
-      initial_delay: 60
-      timeout: 2
     links:
       - lb-ingress/lb
