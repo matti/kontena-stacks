@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-if [ "$1" == "all" ]; then
+if [ "$1" = "all" ]; then
   dirs=$(ls -d */)
 else
   dirs="$1"
