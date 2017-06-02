@@ -1,5 +1,5 @@
 stack: matti/kontena-supervisor
-version: 0.1.1
+version: 0.1.2
 description: kontena-supervisor
 
 expose: web
@@ -25,14 +25,16 @@ variables:
   lb_https_redirect:
     only_if: lb_service
     type: boolean
+    default: false
     from:
-      prompt:
+      prompt: Force kontena/lb to redirect SSL if request is not SSL?
 
   lb_https_redirect_forwarded:
     only_if: lb_service
     type: boolean
+    default: false
     from:
-      prompt:
+      prompt: Force kontena/lb to redirect SSL if header X-Forwarded-Proto is not https?
 
 services:
   web:
