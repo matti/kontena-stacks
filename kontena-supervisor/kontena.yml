@@ -1,5 +1,5 @@
 stack: matti/kontena-supervisor
-version: 0.1.0
+version: 0.1.1
 description: kontena-supervisor
 
 expose: web
@@ -40,6 +40,10 @@ services:
     deploy:
       strategy: daemon
       wait_for_port: 8080
+      min_health: 0.5
+      interval: 1h
+    affinity:
+      - label!=no-kontena-supervisor
     environment:
       - KONTENA_LB_MODE=http
       - KONTENA_LB_INTERNAL_PORT=8080
@@ -50,5 +54,12 @@ services:
       # {% if lb_https_redirect_forwarded %}
       - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ hdr(X-Forwarded-Proto) -i https }
       # {% endif %}
+    health_check:
+      protocol: http
+      port: 8080
+      interval: 10
+      uri: /health
+      initial_delay: 30
+      timeout: 2
     links:
       - {{ lb_service }}
