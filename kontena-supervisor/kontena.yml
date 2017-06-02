@@ -1,27 +1,54 @@
 stack: matti/kontena-supervisor
-version: 0.0.2
+version: 0.1.0
 description: kontena-supervisor
 
 expose: web
 
 variables:
-  KONTENA_LB_VIRTUAL_HOSTS:
-    # BUG only_if: link_lb
+  lb_service:
     type: string
-    # BUG required: false
-    default: example.net
+    required: false
     from:
-      prompt: KONTENA_LB_VIRTUAL_HOSTS
+      service_link:
+        prompt: Pick a loadbalancer
+        image: kontena/lb
+        name: lb
+
+  lb_domain:
+    only_if: lb_service
+    type: string
+    min_length: 1
+    default: kontena-supervisor.kontena.rocks
+    from:
+      prompt:
+
+  lb_https_redirect:
+    only_if: lb_service
+    type: boolean
+    from:
+      prompt:
+
+  lb_https_redirect_forwarded:
+    only_if: lb_service
+    type: boolean
+    from:
+      prompt:
 
 services:
   web:
     image: mattipaksula/kontena-supervisor
     deploy:
       strategy: daemon
-      wait_for_port: 80
+      wait_for_port: 8080
     environment:
       - KONTENA_LB_MODE=http
-      - KONTENA_LB_INTERNAL_PORT=80
-      - KONTENA_LB_VIRTUAL_HOSTS={{ KONTENA_LB_VIRTUAL_HOSTS }}
+      - KONTENA_LB_INTERNAL_PORT=8080
+      - KONTENA_LB_VIRTUAL_HOSTS={{ lb_domain }}
+      # {% if lb_https_redirect %}
+      - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ ssl_fc }
+      # {% endif %}
+      # {% if lb_https_redirect_forwarded %}
+      - KONTENA_LB_CUSTOM_SETTINGS=redirect scheme https if !{ hdr(X-Forwarded-Proto) -i https }
+      # {% endif %}
     links:
-      - lb-ingress/lb
+      - {{ lb_service }}
