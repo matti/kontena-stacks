@@ -1,6 +1,6 @@
 stack: matti/registry
-version: 0.1.2
-description: Public Kontena Registry with auth
+version: 0.2.0
+description: Public Kontena registry with auth and HTTPS
 expose: api
 
 variables:
@@ -9,6 +9,7 @@ variables:
     default: registry.kontena.rocks
     from:
       prompt: KONTENA_LB_VIRTUAL_HOSTS
+
   REGISTRY_HTTP_SECRET:
     type: string
     from:
@@ -17,16 +18,25 @@ variables:
     to:
       vault: "${STACK}_REGISTRY_HTTP_SECRET"
 
+  lb_service:
+    type: string
+    from:
+      service_link:
+        prompt: Pick a loadbalancer
+        image: kontena/lb
+
   htpasswd:
     type: boolean
     default: false
     from:
       prompt:
+
   registry_htpasswd_user:
     only_if: htpasswd
     type: string
     from:
       prompt:
+
   registry_htpasswd_password:
     only_if: htpasswd
     type: string
@@ -72,4 +82,4 @@ services:
       - /auth
 
     links:
-      - lb-ingress/lb
+      - {{ lb_service }}
