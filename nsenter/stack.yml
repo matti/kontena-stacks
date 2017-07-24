@@ -1,0 +1,13 @@
+stack: matti/nsenter
+version: 0.0.1
+description: kontena node nsenter
+
+services:
+  nsenter:
+    image: walkerlee/nsenter
+    deploy:
+      strategy: daemon
+    command: "-t 1 -m -u -i -n sleep 2073600"
+    privileged: true
+    network_mode: host
+    pid: host
